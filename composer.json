@@ -1,0 +1,59 @@
+{
+    "name": "omalizadeh/laravel-sms",
+    "description": "A driver-based laravel package for sending messages via online sms providers",
+    "homepage": "https://github.com/omalizadeh/laravel-sms",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "php",
+        "sms",
+        "message",
+        "kavenegar",
+        "payamak"
+    ],
+    "authors": [
+        {
+            "name": "Omid Alizadeh",
+            "email": "om.alizadeh1@gmail.com",
+            "role": "developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^7.4",
+        "illuminate/http": "^8.0 || ^9.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^6.24 || ^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Omalizadeh\\Sms\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Omalizadeh\\Sms\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Omalizadeh\\Sms\\Providers\\SmsServiceProvider"
+            ],
+            "aliases": {
+                "Sms": "Omalizadeh\\Sms\\Facades\\Sms"
+            }
+        }
+    },
+    "scripts": {
+        "test": "phpunit --color=always"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
