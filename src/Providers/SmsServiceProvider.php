@@ -3,11 +3,16 @@
 namespace Omalizadeh\Sms\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Omalizadeh\Sms\Sms;
 
 class SmsServiceProvider extends ServiceProvider
 {
     public function register()
     {
+        $this->app->bind('SmsProvider', function () {
+            return new Sms();
+        });
+
         $this->mergeConfigFrom(
             __DIR__.'/../../config/sms.php',
             'sms.php'
@@ -18,7 +23,6 @@ class SmsServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../../resources/views' => resource_path('views/vendor/multipayment'),
                 __DIR__.'/../../config' => config_path(),
             ]);
         }

@@ -47,7 +47,7 @@
                 "Omalizadeh\\Sms\\Providers\\SmsServiceProvider"
             ],
             "aliases": {
-                "Sms": "Omalizadeh\\Sms\\Facades\\Sms"
+                "SmsProvider": "Omalizadeh\\Sms\\Facades\\Sms"
             }
         }
     },

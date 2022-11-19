@@ -2,9 +2,12 @@
 
 namespace Omalizadeh\Sms;
 
+use Omalizadeh\Sms\Drivers\Contracts\BulkSmsInterface;
 use Omalizadeh\Sms\Drivers\Contracts\Driver;
+use Omalizadeh\Sms\Drivers\Contracts\TemplateSmsInterface;
 use Omalizadeh\Sms\Exceptions\DriverNotFoundException;
 use Omalizadeh\Sms\Exceptions\InvalidConfigurationException;
+use Omalizadeh\Sms\Exceptions\InvalidParameterException;
 use ReflectionClass;
 
 class Sms
@@ -13,19 +16,50 @@ class Sms
     protected string $providerName;
     protected Driver $driver;
 
-    public function send()
+    /**
+     * send a sms message to a phone number
+     *
+     * @param  string  $phoneNumber
+     * @param  string  $message
+     * @param  array  $options
+     */
+    public function send(string $phoneNumber, string $message, array $options = [])
     {
-
+        return $this->driver->send($phoneNumber, $message, $options);
     }
 
-    public function sendBulk()
+    /**
+     * send a sms message to an array of phone numbers
+     *
+     * @param  array  $phoneNumbers
+     * @param  string  $message
+     * @param  array  $options
+     * @return array|mixed
+     * @throws DriverNotFoundException
+     * @throws InvalidParameterException
+     */
+    public function sendBulk(array $phoneNumbers, string $message, array $options = [])
     {
+        $this->validateDriverImplementsTargetInterface(BulkSmsInterface::class);
 
+        return $this->getDriver()->sendBulk($phoneNumbers, $message, $options);
     }
 
-    public function sendTemplate()
+    /**
+     * send a sms message with predefined template to a phone number
+     *
+     * @param  string  $phoneNumber
+     * @param  string|int  $template
+     * @param  array  $options
+     * @return array|mixed
+     * @throws DriverNotFoundException
+     * @throws InvalidParameterException
+     */
+    public function sendTemplate(string $phoneNumber, $template, array $options = [])
     {
+        $this->validateDriverImplementsTargetInterface(TemplateSmsInterface::class);
 
+        return $this->getDriver()->sendTemplate($phoneNumber, $template, $options);
     }
 
     public function setProvider(string $providerName): self
@@ -80,7 +114,7 @@ class Sms
         }
 
         if (!class_exists($class)) {
-            throw new DriverNotFoundException($this->getProviderName().' driver class not found. try updating the package.');
+            throw new DriverNotFoundException($this->getProviderName().' driver class not found. try updating the package');
         }
 
         $driver = new $class($this->driverConfig);
@@ -99,7 +133,7 @@ class Sms
 
     private function getDriverNamespaceConfigKey(): string
     {
-        return $this->getProviderConfigKey().'.driver';
+        return $this->getProviderConfigKey().'.driver_class';
     }
 
     private function setDefaultDriver(): void
@@ -107,7 +141,7 @@ class Sms
         $defaultProviderName = config('sms.default_driver');
 
         if (empty($defaultProviderName) || !is_string($defaultProviderName)) {
-            throw new InvalidConfigurationException('gateway not selected or default gateway does not exist.');
+            throw new DriverNotFoundException('sms provider not selected or default provider does not exist');
         }
 
         $this->setProvider($defaultProviderName);
@@ -118,7 +152,7 @@ class Sms
         $reflect = new ReflectionClass($this->getDriver());
 
         if (!$reflect->implementsInterface($interfaceName)) {
-            throw new DriverNotFoundException("Driver does not implement $interfaceName.");
+            throw new DriverNotFoundException("Driver does not implement $interfaceName");
         }
     }
 }
