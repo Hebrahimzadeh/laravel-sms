@@ -12,8 +12,8 @@ use ReflectionClass;
 
 class Sms
 {
-    protected array $driverConfig;
     protected string $providerName;
+    protected array $driverConfig;
     protected Driver $driver;
 
     /**
@@ -25,7 +25,7 @@ class Sms
      */
     public function send(string $phoneNumber, string $message, array $options = [])
     {
-        return $this->driver->send($phoneNumber, $message, $options);
+        return $this->getDriver()->send($phoneNumber, $message, $options);
     }
 
     /**
