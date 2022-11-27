@@ -5,7 +5,7 @@ namespace Omalizadeh\Sms\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static array send(string $phoneNumber, string $message, array $options = [])
+ * @method static \Omalizadeh\Sms\SentSmsInfo send(string $phoneNumber, string $message, array $options = [])
  * @method static array sendBulk(array $phoneNumbers, string $message, array $options = [])
  * @method static array sendTemplate(string $phoneNumber, $template, array $options = [])
  * @method static string getProviderName()

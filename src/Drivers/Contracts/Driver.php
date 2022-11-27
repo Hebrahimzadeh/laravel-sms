@@ -2,6 +2,8 @@
 
 namespace Omalizadeh\Sms\Drivers\Contracts;
 
+use Omalizadeh\Sms\SentSmsInfo;
+
 abstract class Driver implements SingleSmsInterface
 {
     private array $config;
@@ -25,7 +27,7 @@ abstract class Driver implements SingleSmsInterface
         return $this->config[$key] ?? null;
     }
 
-    abstract public function send(string $phoneNumber, string $message, array $options = []);
+    abstract public function send(string $phoneNumber, string $message, array $options = []): SentSmsInfo;
 
     abstract public function getSingleSmsUrl(): string;
 }

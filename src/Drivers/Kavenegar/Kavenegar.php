@@ -9,10 +9,11 @@ use Omalizadeh\Sms\Drivers\Contracts\TemplateSmsInterface;
 use Omalizadeh\Sms\Exceptions\InvalidConfigurationException;
 use Omalizadeh\Sms\Exceptions\InvalidParameterException;
 use Omalizadeh\Sms\Exceptions\SendingSmsFailedException;
+use Omalizadeh\Sms\SentSmsInfo;
 
 class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
 {
-    public function send(string $phoneNumber, string $message, array $options = [])
+    public function send(string $phoneNumber, string $message, array $options = []): SentSmsInfo
     {
         $data = [
             'receptor' => $phoneNumber,
@@ -24,10 +25,15 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
         $responseJson = $this->callApi($this->getSingleSmsUrl(), $data);
 
         if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
-            return array_pop($responseJson['entries']);
+            $smsDetail = array_pop($responseJson['entries']);
+
+            return new SentSmsInfo($smsDetail['messageid'], $smsDetail['cost']);
         }
 
-        return $responseJson;
+        throw new SendingSmsFailedException(
+            'sent sms details not found in response',
+            $responseJson['return']['status'],
+        );
     }
 
     public function sendBulk(array $phoneNumbers, string $message, array $options = [])
@@ -124,7 +130,7 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     protected function callApi(string $url, array $data)
     {
-        $response = Http::acceptJson()->post($url, $data);
+        $response = Http::asForm()->acceptJson()->post($url, $data);
 
         $responseJson = $response->json();
 

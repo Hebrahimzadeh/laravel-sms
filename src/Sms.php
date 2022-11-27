@@ -22,8 +22,9 @@ class Sms
      * @param  string  $phoneNumber
      * @param  string  $message
      * @param  array  $options
+     * @return SentSmsInfo
      */
-    public function send(string $phoneNumber, string $message, array $options = [])
+    public function send(string $phoneNumber, string $message, array $options = []): SentSmsInfo
     {
         return $this->getDriver()->send($phoneNumber, $message, $options);
     }
