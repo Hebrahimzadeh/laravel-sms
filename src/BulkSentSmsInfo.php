@@ -30,4 +30,12 @@ class BulkSentSmsInfo
     {
         return $this->totalCost;
     }
+
+    /**
+     * @return int
+     */
+    public function getMessagesCount(): int
+    {
+        return count($this->messageIds);
+    }
 }
