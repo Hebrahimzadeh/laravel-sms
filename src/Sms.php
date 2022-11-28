@@ -30,23 +30,6 @@ class Sms
     }
 
     /**
-     * send a sms message to an array of phone numbers
-     *
-     * @param  array  $phoneNumbers
-     * @param  string  $message
-     * @param  array  $options
-     * @return array|mixed
-     * @throws DriverNotFoundException
-     * @throws InvalidParameterException
-     */
-    public function sendBulk(array $phoneNumbers, string $message, array $options = [])
-    {
-        $this->validateDriverImplementsTargetInterface(BulkSmsInterface::class);
-
-        return $this->getDriver()->sendBulk($phoneNumbers, $message, $options);
-    }
-
-    /**
      * send a sms message with predefined template to a phone number
      *
      * @param  string  $phoneNumber
@@ -56,11 +39,28 @@ class Sms
      * @throws DriverNotFoundException
      * @throws InvalidParameterException
      */
-    public function sendTemplate(string $phoneNumber, $template, array $options = [])
+    public function sendTemplate(string $phoneNumber, $template, array $options = []): SentSmsInfo
     {
         $this->validateDriverImplementsTargetInterface(TemplateSmsInterface::class);
 
         return $this->getDriver()->sendTemplate($phoneNumber, $template, $options);
+    }
+
+    /**
+     * send a sms message to an array of phone numbers
+     *
+     * @param  array  $phoneNumbers
+     * @param  string  $message
+     * @param  array  $options
+     * @return array|mixed
+     * @throws DriverNotFoundException
+     * @throws InvalidParameterException
+     */
+    public function sendBulk(array $phoneNumbers, string $message, array $options = []): BulkSentSmsInfo
+    {
+        $this->validateDriverImplementsTargetInterface(BulkSmsInterface::class);
+
+        return $this->getDriver()->sendBulk($phoneNumbers, $message, $options);
     }
 
     public function setProvider(string $providerName): self

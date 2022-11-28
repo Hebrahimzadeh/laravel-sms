@@ -3,6 +3,7 @@
 namespace Omalizadeh\Sms\Drivers\Kavenegar;
 
 use Illuminate\Support\Facades\Http;
+use Omalizadeh\Sms\BulkSentSmsInfo;
 use Omalizadeh\Sms\Drivers\Contracts\BulkSmsInterface;
 use Omalizadeh\Sms\Drivers\Contracts\Driver;
 use Omalizadeh\Sms\Drivers\Contracts\TemplateSmsInterface;
@@ -36,7 +37,34 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
         );
     }
 
-    public function sendBulk(array $phoneNumbers, string $message, array $options = [])
+    public function sendTemplate(string $phoneNumber, $template, array $options = []): SentSmsInfo
+    {
+        if (!is_string($template)) {
+            throw new InvalidParameterException('template must be a string value');
+        }
+
+        $data = [
+            'receptor' => $phoneNumber,
+            'template' => $template,
+        ];
+
+        $data = $this->mergeTemplateOptions($data, $options);
+
+        $responseJson = $this->callApi($this->getSingleSmsUrl(), $data);
+
+        if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
+            $smsDetail = array_pop($responseJson['entries']);
+
+            return new SentSmsInfo($smsDetail['messageid'], $smsDetail['cost']);
+        }
+
+        throw new SendingSmsFailedException(
+            'sent sms details not found in response',
+            $responseJson['return']['status'],
+        );
+    }
+
+    public function sendBulk(array $phoneNumbers, string $message, array $options = []): BulkSentSmsInfo
     {
         if (count($phoneNumbers) > 200) {
             throw new InvalidParameterException('phone numbers count exceeds max value of 200');
@@ -51,43 +79,21 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
         $responseJson = $this->callApi($this->getBulkSmsUrl(), $data);
 
-        return $responseJson['entries'] ?? $responseJson;
-    }
-
-    public function sendTemplate(string $phoneNumber, $template, array $options = [])
-    {
-        if (!is_string($template)) {
-            throw new InvalidParameterException('template must be a string value');
+        if (empty($responseJson['entries'])) {
+            throw new SendingSmsFailedException(
+                'sent sms details not found in response',
+                $responseJson['return']['status'],
+            );
         }
 
-        $data = [
-            'receptor' => $phoneNumber,
-            'template' => $template,
-        ];
+        $entries = collect($responseJson['entries']);
 
-        $data = $this->mergeTemplateOptions($data, $options);
-
-        $responseJson = $this->callApi($this->getTemplateSmsUrl(), $data);
-
-        if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
-            return array_pop($responseJson['entries']);
-        }
-
-        return $responseJson;
+        return new BulkSentSmsInfo($entries->pluck('messageid')->toArray(), $entries->sum('cost'));
     }
 
     public function getSingleSmsUrl(): string
     {
         return $this->getBulkSmsUrl();
-    }
-
-    public function getBulkSmsUrl(): string
-    {
-        if (empty($apiKey = $this->getConfig('api_key'))) {
-            throw new InvalidConfigurationException('invalid api_key sms provider config');
-        }
-
-        return 'https://api.kavenegar.com/v1/'.$apiKey.'/sms/send.json';
     }
 
     public function getTemplateSmsUrl(): string
@@ -97,6 +103,15 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
         }
 
         return 'https://api.kavenegar.com/v1/'.$apiKey.'/verify/lookup.json';
+    }
+
+    public function getBulkSmsUrl(): string
+    {
+        if (empty($apiKey = $this->getConfig('api_key'))) {
+            throw new InvalidConfigurationException('invalid api_key sms provider config');
+        }
+
+        return 'https://api.kavenegar.com/v1/'.$apiKey.'/sms/send.json';
     }
 
     protected function mergeSmsOptions(array $data, array $options): array
