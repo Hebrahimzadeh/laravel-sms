@@ -50,7 +50,7 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
         $data = $this->mergeTemplateOptions($data, $options);
 
-        $responseJson = $this->callApi($this->getSingleSmsUrl(), $data);
+        $responseJson = $this->callApi($this->getTemplateSmsUrl(), $data);
 
         if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
             $smsDetail = array_pop($responseJson['entries']);
