@@ -39,9 +39,7 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     public function sendTemplate(string $phoneNumber, $template, array $options = []): SentSmsInfo
     {
-        if (!is_string($template)) {
-            throw new InvalidParameterException('template must be a string value');
-        }
+        $template = is_string($template) ? $template : (string) $template;
 
         $data = [
             'receptor' => $phoneNumber,
