@@ -4,7 +4,7 @@ This is a laravel sms package with multi driver support. Supports laravel **v8.0
 
 > Star! if you used and liked this package.
 
-## Supported Gateways
+## Supported SMS Providers
 
 - [Kavenegar](https://kavenegar.com)
 - [SMS.ir](https://sms.ir)
