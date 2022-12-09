@@ -37,7 +37,6 @@ class Sms
      * @param  array  $options
      * @return array|mixed
      * @throws DriverNotFoundException
-     * @throws InvalidParameterException
      */
     public function sendTemplate(string $phoneNumber, $template, array $options = []): SentSmsInfo
     {
@@ -54,7 +53,6 @@ class Sms
      * @param  array  $options
      * @return array|mixed
      * @throws DriverNotFoundException
-     * @throws InvalidParameterException
      */
     public function sendBulk(array $phoneNumbers, string $message, array $options = []): BulkSentSmsInfo
     {
