@@ -113,7 +113,13 @@ class SmsIr extends Driver implements BulkSmsInterface, TemplateSmsInterface
     protected function mergeTemplateOptions(array $data, array $options): array
     {
         if (empty($options) || !isset($options[0]['Name'], $options[0]['Value'])) {
-            throw new InvalidParameterException('Name and Value are required in options');
+            throw new InvalidParameterException('Name and Value keys are required in options');
+        }
+
+        foreach ($options as $option) {
+            if (!is_string($option['Name'] || !is_string($option['Value']))) {
+                throw new InvalidParameterException('Name and Value options must be string');
+            }
         }
 
         return array_merge($data, [
