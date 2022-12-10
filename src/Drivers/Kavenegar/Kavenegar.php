@@ -195,9 +195,7 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
             501 => 'فقط امکان ارسال پیام تست به شماره صاحب حساب کاربری وجود دارد',
         ];
 
-        $unknownError = 'خطای ناشناخته رخ داده است.';
-
-        return array_key_exists($statusCode, $messages) ? $messages[$statusCode] : $unknownError;
+        return $messages[$statusCode] ?? 'خطای ناشناخته رخ داده است.';
     }
 
     protected function getSuccessfulStatusCode(): int
