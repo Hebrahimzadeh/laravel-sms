@@ -2,7 +2,9 @@
 
 namespace Omalizadeh\Sms;
 
-class SentSmsInfo
+use Illuminate\Contracts\Support\Arrayable;
+
+class SentSmsInfo implements Arrayable
 {
     private int $messageId;
     private float $cost;
@@ -29,5 +31,18 @@ class SentSmsInfo
     public function getCost(): float
     {
         return $this->cost;
+    }
+
+    /**
+     * Get the instance as an array.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'message_id' => $this->getMessageId(),
+            'cost' => $this->getCost(),
+        ];
     }
 }

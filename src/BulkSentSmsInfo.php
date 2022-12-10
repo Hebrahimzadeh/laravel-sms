@@ -2,7 +2,9 @@
 
 namespace Omalizadeh\Sms;
 
-class BulkSentSmsInfo
+use Illuminate\Contracts\Support\Arrayable;
+
+class BulkSentSmsInfo implements Arrayable
 {
     private array $messageIds;
     private float $totalCost;
@@ -37,5 +39,19 @@ class BulkSentSmsInfo
     public function getMessagesCount(): int
     {
         return count($this->messageIds);
+    }
+
+    /**
+     * Get the instance as an array.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'messages_count' => $this->getMessagesCount(),
+            'total_cost' => $this->getTotalCost(),
+            'message_ids' => $this->getMessageIds(),
+        ];
     }
 }
