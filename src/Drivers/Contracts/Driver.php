@@ -4,7 +4,7 @@ namespace Omalizadeh\Sms\Drivers\Contracts;
 
 use Omalizadeh\Sms\SentSmsInfo;
 
-abstract class Driver implements SingleSmsInterface
+abstract class Driver
 {
     private array $config;
 
