@@ -17,7 +17,7 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
     public function send(string $phoneNumber, string $message, array $options = []): SentSmsInfo
     {
         $data = [
-            'to' => $phoneNumber,
+            'recipient' => [$phoneNumber],
             'message' => trim($message),
         ];
 
@@ -25,16 +25,14 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
         $responseJson = $this->callApi($this->getSingleSmsUrl(), $data);
 
-        if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
-            $smsDetail = array_pop($responseJson['entries']);
-
-            return new SentSmsInfo($smsDetail['messageid'], $smsDetail['cost']);
+        if (empty($responseJson['data']['message_id'])) {
+            throw new SendingSmsFailedException(
+                'sent sms details not found in response',
+                $responseJson['status'],
+            );
         }
 
-        throw new SendingSmsFailedException(
-            'sent sms details not found in response',
-            $responseJson['return']['status'],
-        );
+        return new SentSmsInfo($responseJson['data']['message_id'], 0);
     }
 
     public function sendTemplate(string $phoneNumber, $template, array $options = []): SentSmsInfo
@@ -42,34 +40,28 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
         $template = is_string($template) ? $template : (string)$template;
 
         $data = [
-            'receptor' => $phoneNumber,
-            'template' => $template,
+            'to' => $phoneNumber,
+            'code' => $template,
         ];
 
         $data = $this->mergeTemplateOptions($data, $options);
 
         $responseJson = $this->callApi($this->getTemplateSmsUrl(), $data);
 
-        if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
-            $smsDetail = array_pop($responseJson['entries']);
-
-            return new SentSmsInfo($smsDetail['messageid'], $smsDetail['cost']);
+        if (empty($responseJson[1])) {
+            throw new SendingSmsFailedException(
+                'sent sms details not found in response',
+                $responseJson[0],
+            );
         }
 
-        throw new SendingSmsFailedException(
-            'sent sms details not found in response',
-            $responseJson['return']['status'],
-        );
+        return new SentSmsInfo($responseJson[1], 0);
     }
 
     public function sendBulk(array $phoneNumbers, string $message, array $options = []): BulkSentSmsInfo
     {
-        if (count($phoneNumbers) > 200) {
-            throw new InvalidParameterException('phone numbers count exceeds max value of 200');
-        }
-
         $data = [
-            'receptor' => implode(',', $phoneNumbers),
+            'recipient' => $phoneNumbers,
             'message' => trim($message),
         ];
 
@@ -77,16 +69,14 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
         $responseJson = $this->callApi($this->getBulkSmsUrl(), $data);
 
-        if (empty($responseJson['entries'])) {
+        if (empty($responseJson['data']['message_id'])) {
             throw new SendingSmsFailedException(
                 'sent sms details not found in response',
-                $responseJson['return']['status'],
+                $responseJson['status'],
             );
         }
 
-        $entries = collect($responseJson['entries']);
-
-        return new BulkSentSmsInfo($entries->pluck('messageid')->toArray(), $entries->sum('cost'));
+        return new BulkSentSmsInfo($responseJson['data']['message_id'], 0);
     }
 
     public function getSingleSmsUrl(): string
@@ -96,12 +86,12 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     public function getTemplateSmsUrl(): string
     {
-        return 'https://ippanel.com/patterns/pattern';
+        return 'https://api2.ippanel.com/api/v1/sms/pattern/normal/send';
     }
 
     public function getBulkSmsUrl(): string
     {
-        return 'https://ippanel.com/services.jspd';
+        return 'https://api2.ippanel.com/api/v1/sms/send/webservice/single';
     }
 
     protected function mergeSmsOptions(array $data, array $options): array
@@ -111,43 +101,38 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
         }
 
         return array_merge($data, [
-            'from' => $options['from'] ?? null,
+            'sender' => $options['sender'] ?? null,
             'time' => $options['time'] ?? null,
-            'type' => $options['type'] ?? null,
-            'localid' => $options['local_id'] ?? null,
-            'hide' => $options['hide'] ?? null,
         ]);
     }
 
     protected function mergeTemplateOptions(array $data, array $options): array
     {
+        //TODO:: token or variable? test it
         if (!isset($options['token'])) {
-            throw new InvalidParameterException('token option is required when using sms with template');
+            throw new InvalidParameterException('variable option is required when using sms with template');
         }
 
-        return array_merge($data, [
-            'token' => $options['token'],
-            'token2' => $options['token2'] ?? null,
-            'token3' => $options['token3'] ?? null,
-            'type' => $options['type'] ?? null,
-        ]);
+        return array_merge($data, $options['variable']);
     }
 
     protected function callApi(string $url, array $data)
     {
-        if (empty($data['uname'] = $this->getConfig('username')) || empty($data['pass'] = $this->getConfig('password'))) {
-            throw new InvalidConfigurationException('invalid username and password sms provider config');
+        if (empty($apiKey = $this->getConfig('api_key'))) {
+            throw new InvalidConfigurationException('invalid api_key sms provider config');
         }
 
-        $response = Http::asForm()->acceptJson()->post($url, $data);
+        $response = Http::asJson()->acceptJson()->withHeaders([
+            'apiKey' => $apiKey,
+        ])->post($url, $data);
 
         $responseJson = $response->json();
 
-        if (!isset($responseJson['return']['status'])) {
+        if (!isset($responseJson['status'])) {
             throw new SendingSmsFailedException($this->getStatusMessage($response->status()), $response->status());
         }
 
-        $status = $responseJson['return']['status'];
+        $status = $responseJson['code'];
 
         if ($status !== $this->getSuccessfulStatusCode()) {
             throw new SendingSmsFailedException($this->getStatusMessage($status), $status);
@@ -225,6 +210,6 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     protected function getSuccessfulStatusCode(): int
     {
-        return 0;
+        return 200;
     }
 }
