@@ -40,22 +40,23 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
         $template = is_string($template) ? $template : (string)$template;
 
         $data = [
-            'to' => $phoneNumber,
+            'recipient' => $phoneNumber,
             'code' => $template,
         ];
 
+        $data = $this->mergeSmsOptions($data, $options);
         $data = $this->mergeTemplateOptions($data, $options);
 
         $responseJson = $this->callApi($this->getTemplateSmsUrl(), $data);
 
-        if (empty($responseJson[1])) {
+        if (empty($responseJson['data']['message_id'])) {
             throw new SendingSmsFailedException(
                 'sent sms details not found in response',
-                $responseJson[0],
+                $responseJson['status'],
             );
         }
 
-        return new SentSmsInfo($responseJson[1], 0);
+        return new SentSmsInfo($responseJson['data']['message_id'], 0);
     }
 
     public function sendBulk(array $phoneNumbers, string $message, array $options = []): BulkSentSmsInfo
@@ -76,7 +77,7 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
             );
         }
 
-        return new BulkSentSmsInfo($responseJson['data']['message_id'], 0);
+        return new BulkSentSmsInfo([$responseJson['data']['message_id']], 0);
     }
 
     public function getSingleSmsUrl(): string
@@ -100,20 +101,25 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
             return $data;
         }
 
+        if (!isset($options['sender'])) {
+            throw new InvalidParameterException('sender parameter is required.');
+        }
+
         return array_merge($data, [
-            'sender' => $options['sender'] ?? null,
-            'time' => $options['time'] ?? null,
+            'sender' => $options['sender'],
+            'time' => $options['time'] ?? now()->addSecond(),
         ]);
     }
 
     protected function mergeTemplateOptions(array $data, array $options): array
     {
-        //TODO:: token or variable? test it
         if (!isset($options['token'])) {
-            throw new InvalidParameterException('variable option is required when using sms with template');
+            throw new InvalidParameterException('token option is required when using sms with template');
         }
 
-        return array_merge($data, $options['variable']);
+        return array_merge($data, [
+            'variable' => $options['token']
+        ]);
     }
 
     protected function callApi(string $url, array $data)
