@@ -11,4 +11,8 @@ return [
         'driver_class' => \Omalizadeh\Sms\Drivers\SmsIr\SmsIr::class,
         'api_key' => '',
     ],
+    'sms_ir' => [
+        'driver_class' => \Omalizadeh\Sms\Drivers\FarazSms\FarazSms::class,
+        'api_key' => '',
+    ],
 ];
