@@ -51,7 +51,7 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
         if (empty($responseJson['data']['message_id'])) {
             throw new SendingSmsFailedException(
-                'sent sms details not found in response',
+                $this->getStatusMessage($responseJson['status']),
                 $responseJson['status'],
             );
         }
@@ -72,7 +72,7 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
         if (empty($responseJson['data']['message_id'])) {
             throw new SendingSmsFailedException(
-                'sent sms details not found in response',
+                $this->getStatusMessage($responseJson['status']),
                 $responseJson['status'],
             );
         }
@@ -97,10 +97,6 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     protected function mergeSmsOptions(array $data, array $options): array
     {
-        if (empty($options)) {
-            return $data;
-        }
-
         if (!isset($options['sender'])) {
             throw new InvalidParameterException('sender parameter is required.');
         }
