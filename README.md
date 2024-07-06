@@ -8,7 +8,7 @@ This is a laravel sms package with multi driver support. Supports laravel **v8.0
 
 - [Kavenegar](https://kavenegar.com)
 - [SMS.ir](https://sms.ir)
-
+- [FarazSMS](https://farazsms.com)
 ## Installation & Configuration
 
 Install using composer
