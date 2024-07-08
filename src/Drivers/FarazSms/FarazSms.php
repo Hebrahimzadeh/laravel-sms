@@ -97,12 +97,8 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     protected function mergeSmsOptions(array $data, array $options): array
     {
-        if (!isset($options['sender'])) {
-            throw new InvalidParameterException('sender parameter is required.');
-        }
-
         return array_merge($data, [
-            'sender' => $options['sender'],
+            'sender' => $options['sender'] ?? $this->getConfig('default_sender'),
             'time' => $options['time'] ?? now()->addSecond(),
         ]);
     }

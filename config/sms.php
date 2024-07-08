@@ -14,5 +14,6 @@ return [
     'faraz_sms' => [
         'driver_class' => \Omalizadeh\Sms\Drivers\FarazSms\FarazSms::class,
         'api_key' => '',
+        'default_sender' => env('FARAZ_DEFAULT_SENDER', '+983000505')
     ],
 ];
