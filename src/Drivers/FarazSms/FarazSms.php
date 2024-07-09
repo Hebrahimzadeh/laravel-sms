@@ -97,12 +97,14 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
 
     protected function mergeSmsOptions(array $data, array $options): array
     {
-        if (!isset($options['sender'])) {
-            throw new InvalidParameterException('sender parameter is required.');
+        $sender =  $options['sender'] ?? $this->getConfig('default_sender');
+
+        if (empty($sender)) {
+            throw new InvalidParameterException('sender parameter is required for Faraz sms driver.');
         }
 
         return array_merge($data, [
-            'sender' => $options['sender'],
+            'sender' => $sender,
             'time' => $options['time'] ?? now()->addSecond(),
         ]);
     }
@@ -121,7 +123,7 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
     protected function callApi(string $url, array $data)
     {
         if (empty($apiKey = $this->getConfig('api_key'))) {
-            throw new InvalidConfigurationException('invalid api_key sms provider config');
+            throw new InvalidConfigurationException('invalid api_key faraz sms provider config');
         }
 
         $response = Http::asJson()->acceptJson()->withHeaders([
