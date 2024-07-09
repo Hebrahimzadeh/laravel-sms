@@ -74,4 +74,12 @@ class FarazSmsTest extends TestCase
 
         $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
     }
+
+    public function test_missing_sender_option_leads_to_exception()
+    {
+        $this->expectException(\Omalizadeh\Sms\Exceptions\InvalidParameterException::class);
+        $this->expectExceptionMessage('sender parameter is required for Faraz sms driver.');
+
+        $this->farazSms->send('09123456789', 'Test message');
+    }
 }
