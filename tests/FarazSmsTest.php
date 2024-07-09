@@ -3,6 +3,7 @@
 namespace Omalizadeh\Sms\Tests;
 
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Omalizadeh\Sms\Drivers\FarazSms\FarazSms;
 use Omalizadeh\Sms\Exceptions\SendingSmsFailedException;
@@ -20,7 +21,7 @@ class FarazSmsTest extends TestCase
         $this->farazSms = new FarazSms(config('sms.faraz_sms'));
     }
 
-    public function test_sms_can_be_sent_successfully_by_faraz_driver()
+    public function test_sms_can_be_sent_successfully_by_faraz_driver(): void
     {
         Http::fake([
             'https://api2.ippanel.com/api/v1/sms/send/webservice/single' => Http::response([
@@ -30,7 +31,7 @@ class FarazSmsTest extends TestCase
                     'message_id' => '123456789'
                 ],
                 'error_message' => null
-            ], 200)
+            ])
         ]);
 
         $result = $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
@@ -46,14 +47,14 @@ class FarazSmsTest extends TestCase
         });
     }
 
-    public function test_sms_can_get_failed_successfully()
+    public function test_sms_can_get_failed_successfully(): void
     {
         Http::fake([
             'https://api2.ippanel.com/api/v1/sms/send/webservice/single' => Http::response([
                 'status' => 'error',
                 'code' => 5,
                 'message' => 'اعتبار کافی نیست.'
-            ], 200)
+            ])
         ]);
 
         $this->expectException(SendingSmsFailedException::class);
@@ -62,12 +63,12 @@ class FarazSmsTest extends TestCase
         $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
     }
 
-    public function test_invalid_response_structure_exception()
+    public function test_invalid_response_structure_exception(): void
     {
         Http::fake([
             'https://api2.ippanel.com/api/v1/sms/send/webservice/single' => Http::response([
                 'unexpected' => 'response'
-            ], 200)
+            ])
         ]);
 
         $this->expectException(SendingSmsFailedException::class);
@@ -75,8 +76,14 @@ class FarazSmsTest extends TestCase
         $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
     }
 
-    public function test_missing_sender_option_leads_to_exception()
+    public function test_missing_sender_option_leads_to_exception(): void
     {
+        config([
+            'sms.faraz_sms.default_sender' => '',
+        ]);
+
+        $this->farazSms = new FarazSms(config('sms.faraz_sms'));
+
         $this->expectException(\Omalizadeh\Sms\Exceptions\InvalidParameterException::class);
         $this->expectExceptionMessage('sender parameter is required for Faraz sms driver.');
 

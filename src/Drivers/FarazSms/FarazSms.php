@@ -99,7 +99,7 @@ class FarazSms extends Driver implements BulkSmsInterface, TemplateSmsInterface
     {
         $sender =  $options['sender'] ?? $this->getConfig('default_sender');
 
-        if (is_null($sender)) {
+        if (empty($sender)) {
             throw new InvalidParameterException('sender parameter is required for Faraz sms driver.');
         }
 
