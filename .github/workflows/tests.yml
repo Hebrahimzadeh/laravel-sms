@@ -9,9 +9,11 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [ 8.2 ]
-        laravel: [ 9.*, 10.*, 11.* ]
+        php: [ 8.2, 8.3 ]
+        laravel: [ 9.*, 10.*, 11.*, 12.* ]
         include:
+          - laravel: 12.*
+            testbench: 10.*
           - laravel: 11.*
             testbench: 9.*
           - laravel: 10.*
@@ -20,7 +22,7 @@ jobs:
             testbench: 7.*
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -29,7 +31,7 @@ jobs:
           extensions: curl, mbstring, pdo, sqlite, pdo_sqlite
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache/files
           key: dependencies-stable-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
