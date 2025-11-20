@@ -1,6 +1,6 @@
 {
     "name": "omalizadeh/laravel-sms",
-    "description": "A driver-based laravel package for sending messages via online sms providers",
+    "description": "A driver-based laravel package for sending messages via online sms providers.",
     "homepage": "https://github.com/omalizadeh/laravel-sms",
     "type": "library",
     "license": "MIT",
@@ -47,10 +47,7 @@
         "laravel": {
             "providers": [
                 "Omalizadeh\\SMS\\Providers\\SMSServiceProvider"
-            ],
-            "aliases": {
-                "SMS": "Omalizadeh\\SMS\\Facades\\SMS"
-            }
+            ]
         }
     },
     "scripts": {

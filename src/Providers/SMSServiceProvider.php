@@ -9,7 +9,7 @@ class SMSServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind('SMS', function () {
+        $this->app->bind('sms', function () {
             return new SMS();
         });
 
