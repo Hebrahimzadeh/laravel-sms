@@ -1,23 +1,26 @@
 <?php
 
-namespace Omalizadeh\Sms\Facades;
+namespace Omalizadeh\SMS\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Omalizadeh\SMS\Requests\SendBulkSMSRequest;
+use Omalizadeh\SMS\Requests\SendSMSRequest;
+use Omalizadeh\SMS\Responses\SendBulkSMSResponse;
+use Omalizadeh\SMS\Responses\SendSMSResponse;
 
 /**
- * @method static \Omalizadeh\Sms\SentSmsInfo send(string $phoneNumber, string $message, array $options = [])
- * @method static \Omalizadeh\Sms\SentSmsInfo sendTemplate(string $phoneNumber, $template, array $options = [])
- * @method static \Omalizadeh\Sms\BulkSentSmsInfo sendBulk(array $phoneNumbers, string $message, array $options = [])
- * @method static \Omalizadeh\Sms\Sms setProvider(string $providerName)
- * @method static string getProviderName()
+ * @method static SendSMSResponse send(SendSMSRequest $request)
+ * @method static SendSMSResponse sendTemplate(string $phoneNumber, $template, array $options = [])
+ * @method static SendBulkSMSResponse sendBulk(SendBulkSMSRequest $request)
+ * @method static \Omalizadeh\SMS\SMS setProvider(string $provider)
+ * @method static string getProvider()
  *
- * @see \Omalizadeh\Sms\Sms
- *
+ * @see \Omalizadeh\SMS\SMS
  */
-class Sms extends Facade
+class SMS extends Facade
 {
-    protected static function getFacadeAccessor()
+    protected static function getFacadeAccessor(): string
     {
-        return \Omalizadeh\Sms\Sms::class;
+        return 'SMS';
     }
 }

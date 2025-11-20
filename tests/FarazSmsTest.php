@@ -1,92 +1,141 @@
 <?php
 
-namespace Omalizadeh\Sms\Tests;
+namespace Omalizadeh\SMS\Tests;
 
-
-use Illuminate\Support\Facades\Config;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Omalizadeh\Sms\Drivers\FarazSms\FarazSms;
-use Omalizadeh\Sms\Exceptions\SendingSmsFailedException;
+use Omalizadeh\SMS\Drivers\FarazSMS\FarazSMS;
+use Omalizadeh\SMS\Exceptions\InvalidSMSConfigurationException;
+use Omalizadeh\SMS\Exceptions\SendingSMSFailedException;
+use Omalizadeh\SMS\Requests\SendSMSRequest;
 
-class FarazSmsTest extends TestCase
+class FarazSMSTest extends TestCase
 {
-    protected FarazSms $farazSms;
+    protected FarazSMS $farazSMS;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        config(['sms.faraz_sms.api_key' => 'test_api_key']);
+        config(['sms.faraz_sms.token' => 'test_token']);
 
-        $this->farazSms = new FarazSms(config('sms.faraz_sms'));
+        $this->farazSMS = new FarazSMS(config('sms.faraz_sms'));
     }
 
     public function test_sms_can_be_sent_successfully_by_faraz_driver(): void
     {
         Http::fake([
-            'https://api2.ippanel.com/api/v1/sms/send/webservice/single' => Http::response([
-                'status' => 'OK',
-                'code' => 200,
+            'https://edge.ippanel.com/v1/api/send' => Http::response([
                 'data' => [
-                    'message_id' => '123456789'
+                    'message_outbox_ids' => [
+                        1123544244,
+                    ],
                 ],
-                'error_message' => null
-            ])
+                'meta' => [
+                    'status' => true,
+                    'message' => 'انجام شد',
+                    'message_parameters' => [],
+                    'message_code' => '200-1',
+                ],
+            ]),
         ]);
 
-        $result = $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
+        $response = $this->farazSMS->send(
+            new SendSMSRequest(
+                '+989123456789',
+                'Test message',
+                '1000',
+            ),
+        );
 
-        $this->assertEquals('123456789', $result->getMessageId());
+        $this->assertEquals(1123544244, $response->getMessageId());
+        $this->assertNull($response->getCost());
 
-        Http::assertSent(function ($request) {
-            return $request->url() == 'https://api2.ippanel.com/api/v1/sms/send/webservice/single' &&
-                $request['recipient'] == ['09123456789'] &&
-                $request['message'] == 'Test message' &&
-                $request['sender'] == '1000' &&
-                $request->header('apiKey')[0] == 'test_api_key';
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://edge.ippanel.com/v1/api/send'
+                && $request->hasHeader('Authorization', 'test_token')
+                && $request['sending_type'] === 'webservice'
+                && $request['from_number'] === '1000'
+                && $request['params']['recipients'] === ['+989123456789'];
         });
     }
 
     public function test_sms_can_get_failed_successfully(): void
     {
+        $this->expectException(SendingSMSFailedException::class);
+        $this->expectExceptionMessage('اطلاعات وارد شده صحیح نمی باشد');
+
         Http::fake([
-            'https://api2.ippanel.com/api/v1/sms/send/webservice/single' => Http::response([
-                'status' => 'error',
-                'code' => 5,
-                'message' => 'اعتبار کافی نیست.'
-            ])
+            'https://edge.ippanel.com/v1/api/send' => Http::response([
+                'data' => null,
+                'meta' => [
+                    'status' => false,
+                    'message' => 'اطلاعات وارد شده صحیح نمی باشد',
+                    'message_parameters' => [],
+                    'message_code' => '400-1',
+                    'errors' => [],
+                ],
+            ]),
         ]);
 
-        $this->expectException(SendingSmsFailedException::class);
-        $this->expectExceptionMessage('اعتبار کافی نیست.');
+        $this->farazSMS->send(
+            new SendSMSRequest(
+                '+989123456789',
+                'Test message',
+                '1000',
+            ),
+        );
 
-        $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://edge.ippanel.com/v1/api/send'
+                && $request->header('Authorization')[0] === 'test_token'
+                && $request['sending_type'] === 'webservice'
+                && $request['from_number'] === '1000'
+                && $request['params']['recipients'] === ['+989123456789'];
+        });
     }
 
     public function test_invalid_response_structure_exception(): void
     {
+        $this->expectException(SendingSMSFailedException::class);
+        $this->expectExceptionMessage('Invalid response from FarazSMS: {"unexpected":"error"}');
+
         Http::fake([
-            'https://api2.ippanel.com/api/v1/sms/send/webservice/single' => Http::response([
-                'unexpected' => 'response'
-            ])
+            'https://edge.ippanel.com/v1/api/send' => Http::response([
+                'unexpected' => 'error',
+            ]),
         ]);
 
-        $this->expectException(SendingSmsFailedException::class);
-
-        $this->farazSms->send('09123456789', 'Test message', ['sender' => '1000']);
+        $this->farazSMS->send(
+            new SendSMSRequest(
+                '+989123456789',
+                'Test message',
+                '1000',
+            ),
+        );
     }
 
-    public function test_missing_sender_option_leads_to_exception(): void
+    public function test_missing_token_leads_to_exception(): void
     {
+        $this->expectException(InvalidSMSConfigurationException::class);
+        $this->expectExceptionMessage('Invalid faraz_sms token.');
+
+        Http::fake();
+
         config([
-            'sms.faraz_sms.default_sender' => '',
+            'sms.faraz_sms.token' => '',
         ]);
 
-        $this->farazSms = new FarazSms(config('sms.faraz_sms'));
+        $this->farazSMS = new FarazSMS(config('sms.faraz_sms'));
 
-        $this->expectException(\Omalizadeh\Sms\Exceptions\InvalidParameterException::class);
-        $this->expectExceptionMessage('sender parameter is required for Faraz sms driver.');
+        $this->farazSMS->send(
+            new SendSMSRequest(
+                '+989123456789',
+                'Test message',
+                '1000',
+            ),
+        );
 
-        $this->farazSms->send('09123456789', 'Test message');
+        Http::assertNothingSent();
     }
 }

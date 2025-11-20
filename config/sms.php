@@ -1,19 +1,27 @@
 <?php
 
+use Omalizadeh\SMS\Drivers\FarazSMS\FarazSMS;
+use Omalizadeh\SMS\Drivers\Kavenegar\Kavenegar;
+use Omalizadeh\SMS\Drivers\SMSIr\SMSIr;
+
 return [
-    'default_driver' => env('DEFAULT_SMS_PROVIDER', 'kavenegar'),
+    'default_provider' => env('DEFAULT_SMS_PROVIDER', 'kavenegar'),
 
     'kavenegar' => [
-        'driver_class' => \Omalizadeh\Sms\Drivers\Kavenegar\Kavenegar::class,
-        'api_key' => '',
+        'driver' => Kavenegar::class,
+        'api_key' => env('KAVENEGAR_API_KEY'),
+        'default_sender' => env('KAVENEGAR_DEFAULT_SENDER'),
     ],
+
     'sms_ir' => [
-        'driver_class' => \Omalizadeh\Sms\Drivers\SmsIr\SmsIr::class,
-        'api_key' => '',
+        'driver' => SMSIr::class,
+        'api_key' => env('SMS_IR_API_KEY'),
+        'default_line_number' => env('SMS_IR_DEFAULT_LINE_NUMBER'),
     ],
+
     'faraz_sms' => [
-        'driver_class' => \Omalizadeh\Sms\Drivers\FarazSms\FarazSms::class,
-        'api_key' => '',
-        'default_sender' => env('FARAZ_SMS_DEFAULT_SENDER', '+983000505'),
+        'driver' => FarazSMS::class,
+        'token' => env('FARAZ_SMS_TOKEN'),
+        'default_from_number' => env('FARAZ_SMS_DEFAULT_FROM_NUMBER', '+983000505'),
     ],
 ];
