@@ -1,6 +1,6 @@
 # Laravel SMS Package
 
-This is a laravel sms package with multi driver support. Supports laravel **v8.0+** and requires php **v7.4+**
+This is a laravel sms package with multi driver support. Supports laravel **v11.0+** and requires php **v8.3+**
 
 > Star! :star: if you used and liked this package.
 
@@ -21,7 +21,7 @@ Install using composer
 Publish config file
 
 ```bash
-  php artisan vendor:publish --provider=Omalizadeh\Sms\Providers\SmsServiceProvider
+  php artisan vendor:publish --provider=Omalizadeh\SMS\Providers\SMSServiceProvider
 ```
 
 ## Usage
@@ -29,23 +29,19 @@ Publish config file
 Single message:
 
 ```php
-    // On top...
-    use Omalizadeh\Sms\Facades\Sms;
+    use Omalizadeh\SMS\Facades\SMS;
+    use Omalizadeh\SMS\Requests\SendSMSRequest;
 
-    ////
-
-    Sms::send('09123456789', 'message');
+    SMS::send(new SendSMSRequest('+989123456789', 'Hello!'));
 ```
 
 Template message:
 
 ```php
-    // On top...
-    use Omalizadeh\Sms\Facades\Sms;
+    use Omalizadeh\SMS\Facades\SMS;
+    use Omalizadeh\SMS\Requests\SendTemplateSMSRequest;
 
-    ////
-
-    Sms::sendTemplate('09123456789', 'template_name', [
-        'token' => 'code',
-    ]);
+    SMS::sendTemplate(new SendTemplateSMSRequest('+989123456789', 'template_code', [
+    'param1' => 'coupon',
+    ]));
 ```

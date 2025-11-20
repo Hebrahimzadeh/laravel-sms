@@ -1,22 +1,13 @@
 <?php
 
-namespace Omalizadeh\Sms;
+namespace Omalizadeh\SMS\Responses;
 
-use Illuminate\Contracts\Support\Arrayable;
-
-class SentSmsInfo implements Arrayable
+readonly class SendSMSResponse
 {
-    private int $messageId;
-    private float $cost;
-
-    public function __construct(int $messageId, float $cost)
-    {
-        $this->messageId = $messageId;
-        $this->cost = $cost;
-    }
+    public function __construct(private int $messageId, private ?float $cost = null) {}
 
     /**
-     * get sms provider message id
+     * Get sms provider message id.
      *
      * @return int
      */
@@ -26,9 +17,11 @@ class SentSmsInfo implements Arrayable
     }
 
     /**
-     * @return float
+     * Get cost of sent sms.
+     *
+     * @return ?float
      */
-    public function getCost(): float
+    public function getCost(): ?float
     {
         return $this->cost;
     }

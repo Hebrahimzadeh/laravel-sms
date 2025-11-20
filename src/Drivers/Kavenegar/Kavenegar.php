@@ -1,160 +1,148 @@
 <?php
 
-namespace Omalizadeh\Sms\Drivers\Kavenegar;
+namespace Omalizadeh\SMS\Drivers\Kavenegar;
 
 use Illuminate\Support\Facades\Http;
-use Omalizadeh\Sms\BulkSentSmsInfo;
-use Omalizadeh\Sms\Drivers\Contracts\BulkSmsInterface;
-use Omalizadeh\Sms\Drivers\Contracts\Driver;
-use Omalizadeh\Sms\Drivers\Contracts\TemplateSmsInterface;
-use Omalizadeh\Sms\Exceptions\InvalidConfigurationException;
-use Omalizadeh\Sms\Exceptions\InvalidParameterException;
-use Omalizadeh\Sms\Exceptions\SendingSmsFailedException;
-use Omalizadeh\Sms\SentSmsInfo;
+use Omalizadeh\SMS\Drivers\Contracts\BulkSMSSender;
+use Omalizadeh\SMS\Drivers\Contracts\Driver;
+use Omalizadeh\SMS\Drivers\Contracts\TemplateSMSSender;
+use Omalizadeh\SMS\Exceptions\InvalidSMSConfigurationException;
+use Omalizadeh\SMS\Exceptions\InvalidSMSParameterException;
+use Omalizadeh\SMS\Exceptions\SendingSMSFailedException;
+use Omalizadeh\SMS\Requests\SendBulkSMSRequest;
+use Omalizadeh\SMS\Requests\SendSMSRequest;
+use Omalizadeh\SMS\Requests\SendTemplateSMSRequest;
+use Omalizadeh\SMS\Responses\SendBulkSMSResponse;
+use Omalizadeh\SMS\Responses\SendSMSResponse;
 
-class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
+class Kavenegar extends Driver implements BulkSMSSender, TemplateSMSSender
 {
-    public function send(string $phoneNumber, string $message, array $options = []): SentSmsInfo
+    /**
+     * @throws InvalidSMSConfigurationException
+     * @throws SendingSMSFailedException
+     */
+    public function send(SendSMSRequest $request): SendSMSResponse
     {
         $data = [
-            'receptor' => $phoneNumber,
-            'message' => trim($message),
+            'receptor' => $request->getPhoneNumber(),
+            'message' => $request->getMessage(),
+            'sender' => $request->getSender() ?: $this->getConfig('default_sender'),
         ];
+        $responseJson = $this->callApi($this->getSMSSendingURL(), $data);
 
-        $data = $this->mergeSmsOptions($data, $options);
-
-        $responseJson = $this->callApi($this->getSingleSmsUrl(), $data);
-
-        if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
-            $smsDetail = array_pop($responseJson['entries']);
-
-            return new SentSmsInfo($smsDetail['messageid'], $smsDetail['cost']);
-        }
-
-        throw new SendingSmsFailedException(
-            'sent sms details not found in response',
-            $responseJson['return']['status'],
-        );
+        return Entry::fromArray($responseJson['entries'][0])->toSendSMSResponse();
     }
 
-    public function sendTemplate(string $phoneNumber, $template, array $options = []): SentSmsInfo
+    /**
+     * @throws InvalidSMSConfigurationException
+     * @throws InvalidSMSParameterException
+     * @throws SendingSMSFailedException
+     */
+    public function sendBulk(SendBulkSMSRequest $request): SendBulkSMSResponse
     {
-        $template = is_string($template) ? $template : (string) $template;
-
-        $data = [
-            'receptor' => $phoneNumber,
-            'template' => $template,
-        ];
-
-        $data = $this->mergeTemplateOptions($data, $options);
-
-        $responseJson = $this->callApi($this->getTemplateSmsUrl(), $data);
-
-        if (isset($responseJson['entries']) && !empty($responseJson['entries'])) {
-            $smsDetail = array_pop($responseJson['entries']);
-
-            return new SentSmsInfo($smsDetail['messageid'], $smsDetail['cost']);
-        }
-
-        throw new SendingSmsFailedException(
-            'sent sms details not found in response',
-            $responseJson['return']['status'],
-        );
-    }
-
-    public function sendBulk(array $phoneNumbers, string $message, array $options = []): BulkSentSmsInfo
-    {
-        if (count($phoneNumbers) > 200) {
-            throw new InvalidParameterException('phone numbers count exceeds max value of 200');
-        }
-
-        $data = [
-            'receptor' => implode(',', $phoneNumbers),
-            'message' => trim($message),
-        ];
-
-        $data = $this->mergeSmsOptions($data, $options);
-
-        $responseJson = $this->callApi($this->getBulkSmsUrl(), $data);
-
-        if (empty($responseJson['entries'])) {
-            throw new SendingSmsFailedException(
-                'sent sms details not found in response',
-                $responseJson['return']['status'],
+        if (count($request->getPhoneNumbers()) > 200) {
+            throw new InvalidSMSParameterException(
+                'Kavenegar bulk sms sending does not support more than 200 phone numbers.',
             );
         }
 
-        $entries = collect($responseJson['entries']);
+        $data = [
+            'receptor' => implode(',', $request->getPhoneNumbers()),
+            'message' => $request->getMessage(),
+            'sender' => $request->getSender() ?: $this->getConfig('default_sender'),
+        ];
+        $responseJson = $this->callApi($this->getBulkSMSSendingURL(), $data);
+        $totalCost = 0;
 
-        return new BulkSentSmsInfo($entries->pluck('messageid')->toArray(), $entries->sum('cost'));
+        return new SendBulkSMSResponse(
+            records: array_map(
+                function (array $entryArray) use (&$totalCost) {
+                    $entry = Entry::fromArray($entryArray);
+                    $totalCost += $entry->getCost();
+
+                    return $entry->toSendSMSResponse();
+                },
+                $responseJson['entries'],
+            ),
+            totalCost: $totalCost,
+        );
     }
 
-    public function getSingleSmsUrl(): string
+    /**
+     * @throws InvalidSMSConfigurationException
+     * @throws SendingSMSFailedException
+     */
+    public function sendTemplate(SendTemplateSMSRequest $request): SendSMSResponse
     {
-        return $this->getBulkSmsUrl();
+        $template = $request->getTemplate();
+        $template = is_string($template) ? $template : (string) $template;
+        $data = [
+            'receptor' => $request->getPhoneNumber(),
+            'template' => $template,
+        ];
+        $requestParameters = $request->getParameters();
+
+        if (array_is_list($requestParameters)) {
+            $parameters['token'] = $requestParameters[0];
+            $parameters['token2'] = $requestParameters[1] ?? null;
+            $parameters['token3'] = $requestParameters[2] ?? null;
+            $parameters['token10'] = $requestParameters[3] ?? null;
+            $parameters['token20'] = $requestParameters[4] ?? null;
+        } else {
+            $parameters = $requestParameters;
+        }
+
+        $data = array_merge($data, $parameters);
+        $responseJson = $this->callApi($this->getTemplateSMSSendingURL(), $data);
+
+        return Entry::fromArray($responseJson['entries'][0])->toSendSMSResponse();
     }
 
-    public function getTemplateSmsUrl(): string
+    /**
+     * @throws InvalidSMSConfigurationException
+     */
+    public function getSMSSendingURL(): string
     {
         if (empty($apiKey = $this->getConfig('api_key'))) {
-            throw new InvalidConfigurationException('invalid api_key sms provider config');
+            throw new InvalidSMSConfigurationException('invalid api_key sms provider config');
         }
 
-        return 'https://api.kavenegar.com/v1/'.$apiKey.'/verify/lookup.json';
+        return 'https://api.kavenegar.com/v1/' . $apiKey . '/sms/send.json';
     }
 
-    public function getBulkSmsUrl(): string
+    /**
+     * @throws InvalidSMSConfigurationException
+     */
+    public function getBulkSMSSendingURL(): string
+    {
+        return $this->getSMSSendingURL();
+    }
+
+    public function getTemplateSMSSendingURL(): string
     {
         if (empty($apiKey = $this->getConfig('api_key'))) {
-            throw new InvalidConfigurationException('invalid api_key sms provider config');
+            throw new InvalidSMSConfigurationException('invalid api_key sms provider config');
         }
 
-        return 'https://api.kavenegar.com/v1/'.$apiKey.'/sms/send.json';
-    }
-
-    protected function mergeSmsOptions(array $data, array $options): array
-    {
-        if (empty($options)) {
-            return $data;
-        }
-
-        return array_merge($data, [
-            'sender' => $options['sender'] ?? null,
-            'date' => $options['date'] ?? null,
-            'type' => $options['type'] ?? null,
-            'localid' => $options['local_id'] ?? null,
-            'hide' => $options['hide'] ?? null,
-        ]);
-    }
-
-    protected function mergeTemplateOptions(array $data, array $options): array
-    {
-        if (!isset($options['token'])) {
-            throw new InvalidParameterException('token option is required when using sms with template');
-        }
-
-        return array_merge($data, [
-            'token' => $options['token'],
-            'token2' => $options['token2'] ?? null,
-            'token3' => $options['token3'] ?? null,
-            'type' => $options['type'] ?? null,
-        ]);
+        return 'https://api.kavenegar.com/v1/' . $apiKey . '/verify/lookup.json';
     }
 
     protected function callApi(string $url, array $data)
     {
         $response = Http::asForm()->acceptJson()->post($url, $data);
-
         $responseJson = $response->json();
 
         if (!isset($responseJson['return']['status'])) {
-            throw new SendingSmsFailedException($this->getStatusMessage($response->status()), $response->status());
+            throw new SendingSMSFailedException(
+                'Invalid response from kavenegar: ' . $response->body(),
+                $response->status(),
+            );
         }
 
         $status = $responseJson['return']['status'];
 
-        if ($status !== $this->getSuccessfulStatusCode()) {
-            throw new SendingSmsFailedException($this->getStatusMessage($status), $status);
+        if ($status !== 200) {
+            throw new SendingSMSFailedException($this->getStatusMessage($status), $status);
         }
 
         return $responseJson;
@@ -196,10 +184,5 @@ class Kavenegar extends Driver implements BulkSmsInterface, TemplateSmsInterface
         ];
 
         return $messages[$statusCode] ?? 'خطای ناشناخته رخ داده است.';
-    }
-
-    protected function getSuccessfulStatusCode(): int
-    {
-        return 200;
     }
 }

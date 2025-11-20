@@ -4,7 +4,7 @@ namespace Omalizadeh\SMS\Exceptions;
 
 use Exception;
 
-class SendingSMSFailedException extends Exception
+class InvalidSMSParameterException extends Exception
 {
     //
 }

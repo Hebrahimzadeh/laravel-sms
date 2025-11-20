@@ -1,21 +1,21 @@
 <?php
 
-namespace Omalizadeh\Sms\Tests;
+namespace Omalizadeh\SMS\Tests;
 
-use Omalizadeh\Sms\Exceptions\InvalidConfigurationException;
-use Omalizadeh\Sms\Facades\Sms;
+use Omalizadeh\SMS\Exceptions\InvalidSMSConfigurationException;
+use Omalizadeh\SMS\Facades\SMS;
 
-class SmsConfigTest extends TestCase
+class SMSConfigTest extends TestCase
 {
     public function testDefaultProviderIsIdentified(): void
     {
-        $this->assertEquals('kavenegar', Sms::getProviderName());
+        $this->assertEquals('kavenegar', SMS::getProvider());
     }
 
-    public function testErrorOnUndefinedSmsProvider(): void
+    public function testErrorOnUndefinedSMSProvider(): void
     {
-        $this->expectException(InvalidConfigurationException::class);
+        $this->expectException(InvalidSMSConfigurationException::class);
 
-        Sms::setProvider('undefined_provider');
+        SMS::setProvider('undefined_provider');
     }
 }

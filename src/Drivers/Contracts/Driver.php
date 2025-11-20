@@ -1,8 +1,9 @@
 <?php
 
-namespace Omalizadeh\Sms\Drivers\Contracts;
+namespace Omalizadeh\SMS\Drivers\Contracts;
 
-use Omalizadeh\Sms\SentSmsInfo;
+use Omalizadeh\SMS\Requests\SendSMSRequest;
+use Omalizadeh\SMS\Responses\SendSMSResponse;
 
 abstract class Driver
 {
@@ -13,21 +14,12 @@ abstract class Driver
         $this->config = $config;
     }
 
-    protected function hasConfig(string $key): bool
+    protected function getConfig(string $key)
     {
-        return isset($this->config[$key]);
-    }
-
-    protected function getConfig(?string $key = null)
-    {
-        if (is_null($key)) {
-            return $this->config;
-        }
-
         return $this->config[$key] ?? null;
     }
 
-    abstract public function send(string $phoneNumber, string $message, array $options = []): SentSmsInfo;
+    abstract public function send(SendSMSRequest $request): SendSMSResponse;
 
-    abstract public function getSingleSmsUrl(): string;
+    abstract public function getSMSSendingURL(): string;
 }

@@ -1,29 +1,29 @@
 <?php
 
-namespace Omalizadeh\Sms\Providers;
+namespace Omalizadeh\SMS\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Omalizadeh\Sms\Sms;
+use Omalizadeh\SMS\SMS;
 
-class SmsServiceProvider extends ServiceProvider
+class SMSServiceProvider extends ServiceProvider
 {
-    public function register()
+    public function register(): void
     {
-        $this->app->bind('SmsProvider', function () {
-            return new Sms();
+        $this->app->bind('SMS', function () {
+            return new SMS();
         });
 
         $this->mergeConfigFrom(
-            __DIR__.'/../../config/sms.php',
-            'sms.php'
+            __DIR__ . '/../../config/sms.php',
+            'sms',
         );
     }
 
-    public function boot()
+    public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../../config/sms.php' => config_path('sms.php'),
+                __DIR__ . '/../../config/sms.php' => config_path('sms.php'),
             ]);
         }
     }

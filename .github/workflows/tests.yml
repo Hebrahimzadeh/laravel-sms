@@ -1,6 +1,10 @@
 name: Tests
 
-on: [ push, pull_request ]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -9,17 +13,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [ 8.2, 8.3, 8.4 ]
-        laravel: [ 9.*, 10.*, 11.*, 12.* ]
+        php: [ 8.4 ]
+        laravel: [ 11.*, 12.* ]
         include:
           - laravel: 12.*
             testbench: 10.*
           - laravel: 11.*
             testbench: 9.*
-          - laravel: 10.*
-            testbench: 8.*
-          - laravel: 9.*
-            testbench: 7.*
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, mbstring, pdo, sqlite, pdo_sqlite
+          extensions: curl, mbstring
 
       - name: Cache dependencies
         uses: actions/cache@v4
